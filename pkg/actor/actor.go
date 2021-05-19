@@ -80,8 +80,6 @@ type Actor interface {
 func NewOperatorActions(scheme *runtime.Scheme, cl client.Client, config *rest.Config) []Actor {
 
 	var update Actor
-	// move decommission to top to avoid conflict with other actors
-	decommission := newDecommission(scheme, cl, config)
 
 	// entry point for new PartitionUpdate upgrades
 	// this feature is controlled by a featuregate
@@ -91,6 +89,7 @@ func NewOperatorActions(scheme *runtime.Scheme, cl client.Client, config *rest.C
 		update = newUpgrade(scheme, cl, config)
 	}
 
+	decommission := newDecommission(scheme, cl, config)
 	versionChecker := newVersionChecker(scheme, cl, config)
 	var certs Actor
 	// entry point for new GenerateCert
@@ -112,10 +111,11 @@ func NewOperatorActions(scheme *runtime.Scheme, cl client.Client, config *rest.C
 	// have the featuregate check above or in there handles
 	// func.
 	// decommission needs to be first, it is not dependant on versionchecker
+
 	return []Actor{
-		decommission,
 		versionChecker,
 		certs,
+		decommission,
 		update,
 		newResizePVC(scheme, cl, config),
 		newDeploy(scheme, cl, config, kd),
